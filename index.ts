@@ -7,18 +7,26 @@ import schedule from "node-schedule";
 import { devices, updateDevice } from "./services/device";
 import { sendAlert, sendAwakeStatus, sendDevStatus, sendHeartbeatReport } from "./services/telegram";
 import { recordHeartbeat, getReport, resetHeartbeats } from "./services/heartbeat";
-
-const mqttBrokerUrl = process.env.MQTT_BROKER_URL || "mqtt://localhost:8883";
-const mqttUsername = process.env.MQTT_USER;
-const mqttPassword = process.env.MQTT_PWD;
+import {
+	TOPIC_PREFIX,
+	MQTT_BROKER_URL,
+	MQTT_USERNAME,
+	MQTT_PASSWORD,
+	MQTT_REJECT_UNAUTHORIZED,
+	MAX_RETRY_ATTEMPTS,
+	RETRY_DELAY_MS,
+	HEARTBEAT_REPORT_HOUR,
+	DEV_STATUS_HOURS,
+	TIMEZONE,
+} from "./services/config";
 
 console.log("Starting server...");
-console.log("Host:", mqttBrokerUrl, mqttUsername, mqttPassword);
+console.log("Host:", MQTT_BROKER_URL, MQTT_USERNAME);
 
-const mqttClient = mqtt.connect(mqttBrokerUrl, {
-	username: mqttUsername,
-	password: mqttPassword,
-	rejectUnauthorized: false,
+const mqttClient = mqtt.connect(MQTT_BROKER_URL, {
+	username: MQTT_USERNAME,
+	password: MQTT_PASSWORD,
+	rejectUnauthorized: MQTT_REJECT_UNAUTHORIZED,
 });
 
 function delay(ms: number) {
@@ -27,7 +35,7 @@ function delay(ms: number) {
 
 mqttClient.on("connect", () => {
 	console.log("Connected to MQTT broker");
-	mqttClient.subscribe("gajahsafe/alert/#", (err) => {
+	mqttClient.subscribe(`${TOPIC_PREFIX}/alert/#`, (err) => {
 		if (err) {
 			console.error(
 				new Date(Date.now()).toLocaleString(),
@@ -37,11 +45,11 @@ mqttClient.on("connect", () => {
 		} else {
 			console.log(
 				new Date(Date.now()).toLocaleString(),
-				"Subscribed to gajahsafe/alert/#"
+				`Subscribed to ${TOPIC_PREFIX}/alert/#`
 			);
 		}
 	});
-	mqttClient.subscribe("gajahsafe/awake/#", (err) => {
+	mqttClient.subscribe(`${TOPIC_PREFIX}/awake/#`, (err) => {
 		if (err) {
 			console.error(
 				new Date(Date.now()).toLocaleString(),
@@ -51,15 +59,15 @@ mqttClient.on("connect", () => {
 		} else {
 			console.log(
 				new Date(Date.now()).toLocaleString(),
-				"Subscribed to gajahsafe/awake/#"
+				`Subscribed to ${TOPIC_PREFIX}/awake/#`
 			);
 		}
 	});
-	mqttClient.subscribe("gajahsafe/status/#", (err) => {
+	mqttClient.subscribe(`${TOPIC_PREFIX}/status/#`, (err) => {
 		if (err) {
 			console.error("Error subscribing to MQTT topic:", err);
 		} else {
-			console.log("Subscribed to gajahsafe/status/#");
+			console.log(`Subscribed to ${TOPIC_PREFIX}/status/#`);
 		}
 	});
 });
@@ -116,7 +124,7 @@ const routes: Record<Action, (id: string, message: Buffer) => void> = {
 		let attempt = 0;
 		const trySend = async () => {
 			try {
-				if (attempt < 30) {
+				if (attempt < MAX_RETRY_ATTEMPTS) {
 					const device = devices[id];
 
 					if (!device) throw new Error("Device does not exists");
@@ -139,7 +147,7 @@ const routes: Record<Action, (id: string, message: Buffer) => void> = {
 					"Error sending status to Telegram:",
 					e
 				);
-				await delay(3000);
+				await delay(RETRY_DELAY_MS);
 				attempt++;
 				return trySend();
 			}
@@ -155,7 +163,7 @@ mqttClient.on("message", async (topic, message) => {
 			throw new Error("Invalid topic path");
 		}
 
-		if (path[0] !== "gajahsafe" || !actions.includes(path[1])) {
+		if (path[0] !== TOPIC_PREFIX || !actions.includes(path[1])) {
 			throw new Error("Invalid topic path");
 		}
 
@@ -220,12 +228,12 @@ const job = async () => {
 	return;
 };
 
-// Schedule 24h heartbeat report at 03:00
+// Schedule 24h heartbeat report
 schedule.scheduleJob(
 	{
-		hour: 3,
+		hour: HEARTBEAT_REPORT_HOUR,
 		minute: 0,
-		tz: "Asia/Kuala_Lumpur",
+		tz: TIMEZONE,
 	},
 	async () => {
 		console.log(
@@ -250,23 +258,17 @@ schedule.scheduleJob(
 	}
 );
 
-// Schedule sendDevStatus every 6 PM and 12 AM
-schedule.scheduleJob(
-	{
-		hour: 18,
-		minute: 0,
-		tz: "Asia/Kuala_Lumpur",
-	},
-	job
-);
-schedule.scheduleJob(
-	{
-		hour: 12,
-		minute: 0,
-		tz: "Asia/Kuala_Lumpur",
-	},
-	job
-);
+// Schedule sendDevStatus at each configured hour
+for (const hour of DEV_STATUS_HOURS) {
+	schedule.scheduleJob(
+		{
+			hour,
+			minute: 0,
+			tz: TIMEZONE,
+		},
+		job
+	);
+}
 
 console.log(
 	new Date(Date.now()).toLocaleString(),

@@ -1,0 +1,47 @@
+{
+	"JP1": {
+		"id": "JP-1",
+		"name": "Johor Plantation #1",
+		"area": "Station 8 - P13",
+		"lon": 1337,
+		"lat": 1337,
+		"status": "pending",
+		"channelId": "-1002669339307"
+	},
+	"JP2": {
+		"id": "JP-2",
+		"name": "Johor Plantation #2",
+		"area": "Station 11 - P17",
+		"lon": 1337,
+		"lat": 1337,
+		"status": "pending",
+		"channelId": "-1002669339307"
+	},
+	"FGV1": {
+		"id": "FGV-1",
+		"name": "FGV#1 - Ulu Belitung",
+		"area": "",
+		"lon": 1337,
+		"lat": 1337,
+		"status": "pending",
+		"channelId": "-4825875720"
+	},
+	"FGV2": {
+		"id": "FGV-2",
+		"name": "FGV#2 - Aring 08",
+		"area": "",
+		"lon": 1337,
+		"lat": 1337,
+		"status": "pending",
+		"channelId": "-4825875720"
+	},
+	"DEMO": {
+		"id": "DEMO",
+		"name": "Demo",
+		"area": "KSU gambang",
+		"lon": 3.7211652476097683,
+		"lat": 103.12111159726864,
+		"status": "pending",
+		"channelId": "-1001605985570"
+	}
+}

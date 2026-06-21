@@ -1,6 +1,8 @@
-const timeZone = "Asia/Kuala_Lumpur";
+import { TIMEZONE, HEARTBEAT_REPORT_HOUR } from "./config";
 
-// Maps deviceKey → Set of hours (0–23 MYT) that sent a heartbeat today
+const timeZone = TIMEZONE;
+
+// Maps deviceKey → Set of hours (0–23 local time) that sent a heartbeat today
 const heartbeatStore = new Map<string, Set<number>>();
 
 export type HeartbeatReport = {
@@ -26,9 +28,10 @@ export function recordHeartbeat(deviceKey: string): void {
 
 export function getReport(deviceKey: string): HeartbeatReport {
 	const hours = heartbeatStore.get(deviceKey) ?? new Set<number>();
-	const failedHours = Array.from({ length: 24 }, (_, i) => (i + 3) % 24).filter(
-		(h) => !hours.has(h)
-	);
+	const failedHours = Array.from(
+		{ length: 24 },
+		(_, i) => (i + HEARTBEAT_REPORT_HOUR) % 24
+	).filter((h) => !hours.has(h));
 	return {
 		deviceKey,
 		received: hours.size,

@@ -1,9 +1,17 @@
 import TelegramBot from "node-telegram-bot-api";
 import { updateDevice, type Device, type DeviceRecord } from "./device";
 import type { HeartbeatReport } from "./heartbeat";
+import {
+	APP_EMOJI,
+	APP_NAME,
+	LOCALE,
+	TELEGRAM_BOT_TOKEN,
+	TELEGRAM_HEARTBEAT_CHANNEL_ID,
+	TIMEZONE,
+} from "./config";
 
-const timeZone = "Asia/Kuala_Lumpur";
-const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
+const timeZone = TIMEZONE;
+const telegramBotToken = TELEGRAM_BOT_TOKEN;
 
 if (!telegramBotToken) {
 	console.error(
@@ -31,10 +39,10 @@ async function sendAlert(device: Device, image: string) {
 		lat: 1337,
 	};
 
-	const datetime = new Date(Date.now()).toLocaleString("en-MY", {
+	const datetime = new Date(Date.now()).toLocaleString(LOCALE, {
 		timeZone,
 	});
-	const caption = `🐘 ⚠ GajahSafe Alert! ⚠\n\nDevice ID: ${device.id}\n${device.name}\nArea: ${device.area}\nDate time: ${datetime}`;
+	const caption = `${APP_EMOJI} ⚠ ${APP_NAME} Alert! ⚠\n\nDevice ID: ${device.id}\n${device.name}\nArea: ${device.area}\nDate time: ${datetime}`;
 
 	console.log(
 		new Date(Date.now()).toLocaleString(),
@@ -87,7 +95,7 @@ async function sendDevStatus(devices: DeviceRecord) {
 		}
 
 		const sendByChannel = async (channelId: string) => {
-			const datetime = new Date(Date.now()).toLocaleString("en-MY", {
+			const datetime = new Date(Date.now()).toLocaleString(LOCALE, {
 				timeZone,
 			});
 
@@ -100,7 +108,7 @@ async function sendDevStatus(devices: DeviceRecord) {
 			}
 
 			// should send list of devices status
-			const text = `🐘 GajahSafe Device Status 🧑‍💻\n\n${datetime}\n\n${list}`;
+			const text = `${APP_EMOJI} ${APP_NAME} Device Status 🧑‍💻\n\n${datetime}\n\n${list}`;
 
 			return telegramBot.sendMessage(channelId, text);
 		};
@@ -122,11 +130,11 @@ async function sendDevStatus(devices: DeviceRecord) {
 
 async function sendAwakeStatus(device: Device) {
 	try {
-		const datetime = new Date(Date.now()).toLocaleString("en-MY", {
+		const datetime = new Date(Date.now()).toLocaleString(LOCALE, {
 			timeZone,
 		});
 		// should send list of devices status
-		const text = `🐘 GajahSafe Device Status 🧑‍💻\n\n${datetime}\n\n${device.name} just woke up!`;
+		const text = `${APP_EMOJI} ${APP_NAME} Device Status 🧑‍💻\n\n${datetime}\n\n${device.name} just woke up!`;
 
 		await telegramBot.sendMessage(device.channelId, text);
 	} catch (error) {
@@ -139,13 +147,11 @@ async function sendAwakeStatus(device: Device) {
 	}
 }
 
-const HEARTBEAT_CHANNEL_ID = "-5248562860";
-
 async function sendHeartbeatReport(
 	reports: HeartbeatReport[],
 	deviceRecord: DeviceRecord
 ) {
-	const datetime = new Date().toLocaleString("en-MY", { timeZone });
+	const datetime = new Date().toLocaleString(LOCALE, { timeZone });
 
 	let body = "";
 	for (const report of reports) {
@@ -160,9 +166,9 @@ async function sendHeartbeatReport(
 		body += "\n";
 	}
 
-	const text = `🐘 GajahSafe 24h Heartbeat Report\n\n${datetime}\n\n${body.trimEnd()}`;
+	const text = `${APP_EMOJI} ${APP_NAME} 24h Heartbeat Report\n\n${datetime}\n\n${body.trimEnd()}`;
 
-	await telegramBot.sendMessage(HEARTBEAT_CHANNEL_ID, text);
+	await telegramBot.sendMessage(TELEGRAM_HEARTBEAT_CHANNEL_ID, text);
 }
 
 export { sendAlert, sendDevStatus, sendAwakeStatus, sendHeartbeatReport };

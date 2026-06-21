@@ -1,3 +1,8 @@
+import fs from "fs";
+import path from "path";
+
+import { DEVICES_CONFIG_PATH } from "./config";
+
 export type Device = {
 	id: string;
 	name: string;
@@ -5,58 +10,30 @@ export type Device = {
 	lon: number;
 	lat: number;
 	status: "pending" | "online";
-	channelId: string
+	channelId: string;
 };
 
 export type DeviceRecord = Record<string, Device>;
 
-export let devices: DeviceRecord = {
-	JP1: {
-		id: "JP-1",
-		name: "Johor Plantation #1",
-		area: "Station 8 - P13",
-		lon: 1337,
-		lat: 1337,
-		status: "pending",
-		channelId: "-1002669339307",
-	},
-	JP2: {
-		id: "JP-2",
-		name: "Johor Plantation #2",
-		area: "Station 11 - P17",
-		lon: 1337,
-		lat: 1337,
-		status: "pending",
-		channelId: "-1002669339307",
-	},
-	FGV1: {
-		id: "FGV-1",
-		name: "FGV#1 - Ulu Belitung",
-		area: "",
-		lon: 1337,
-		lat: 1337,
-		status: "pending",
-		channelId: "-4825875720",
-	},
-	FGV2: {
-		id: "FGV-2",
-		name: "FGV#2 - Aring 08",
-		area: "",
-		lon: 1337,
-		lat: 1337,
-		status: "pending",
-		channelId: "-4825875720",
-	},
-	DEMO: {
-		id: "DEMO",
-		name: "Demo",
-		area: "KSU gambang",
-		lon: 3.7211652476097683,
-		lat: 103.12111159726864,
-		status: "pending",
-		channelId: "-1001605985570",
-	},
-};
+function loadDevices(): DeviceRecord {
+	const resolved = path.isAbsolute(DEVICES_CONFIG_PATH)
+		? DEVICES_CONFIG_PATH
+		: path.resolve(process.cwd(), DEVICES_CONFIG_PATH);
+
+	try {
+		const raw = fs.readFileSync(resolved, "utf-8");
+		return JSON.parse(raw) as DeviceRecord;
+	} catch (e) {
+		console.error(
+			new Date(Date.now()).toLocaleString(),
+			`Failed to load device registry from ${resolved}:`,
+			e
+		);
+		return {};
+	}
+}
+
+export let devices: DeviceRecord = loadDevices();
 
 export function updateDevice(id: string, payload: Device) {
 	devices[id] = {
